@@ -1,12 +1,23 @@
 name: Nomad Gear Daily Bot & Auto Publisher
 on:
   schedule:
-    # 매일 아침 한국시간 오전 7시 40분 (UTC 22:40)에 자동 실행
+    # 1) 매일 아침 한국시간 오전 7시 40분 (UTC 22:40)에 후보 3선 발송
     - cron: '40 22 * * *'
-  workflow_dispatch: # 깃허브에서 수동으로 '실행' 버튼 눌러 테스트도 가능
+    # 2) 15분마다 사용자가 텔레그램에서 선택한 후보(1, 2, 3번 버튼/답장)가 있는지 확인 후 발행
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '실행 모드 (propose: 새 후보 3개 발송 / check: 선택 응답 확인 후 발행)'
+        required: false
+        default: 'propose'
+        type: choice
+        options:
+          - propose
+          - check
 
 permissions:
-  contents: write # 블로그 포스트(_posts) 및 이력(sent_history.txt) 자동 커밋/푸시 권한
+  contents: write
 
 jobs:
   run-bot:
@@ -17,27 +28,55 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: 실행 모드 결정 및 대기 상태 사전 점검
+        id: check_mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODE="${{ github.event.inputs.mode || 'propose' }}"
+            echo "run_mode=$MODE" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "40 22 * * *" ]; then
+            echo "run_mode=propose" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            # 15분 주기 체크: pending_candidates.json이 pending 상태일 때만 파이썬 실행
+            if [ -f "pending_candidates.json" ] && grep -q '"status": "pending"' pending_candidates.json; then
+              echo "run_mode=check" >> $GITHUB_OUTPUT
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "run_mode=skip" >> $GITHUB_OUTPUT
+              echo "should_run=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
       - name: 파이썬 설치
+        if: steps.check_mode.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: 라이브러리 설치
+        if: steps.check_mode.outputs.should_run == 'true'
         run: pip install -U pip && pip install -r requirements.txt
 
-      - name: 봇 실행 및 블로그 글 생성 & 텔레그램 알림
+      - name: 봇 실행 (후보 3선 발송 또는 선택된 글 발행)
+        if: steps.check_mode.outputs.should_run == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python main.py
+        run: |
+          git pull --rebase origin main || true
+          python main.py --mode ${{ steps.check_mode.outputs.run_mode }} --wait 120
 
-      - name: 생성된 블로그 글 및 이력 자동 커밋 & 푸시 (GitHub Pages 자동 배포)
+      - name: 변경사항 자동 커밋 & 푸시 (GitHub Pages 자동 배포)
+        if: steps.check_mode.outputs.should_run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _posts sent_history.txt
+          git add _posts sent_history.txt pending_candidates.json 2>/dev/null || true
           if ! git diff --staged --quiet; then
-            git commit -m "feat: publish new blog post [skip ci]"
+            git commit -m "feat: update blog posts and candidate status [skip ci]"
+            git pull --rebase origin main || true
             git push
           fi
