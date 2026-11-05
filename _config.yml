@@ -1,0 +1,17 @@
+title: "노마드 & 기어 (Nomad & Gear)"
+email: "shimnj@users.noreply.github.com"
+description: "한국 2030을 위한 디지털 노마드, 스마트 기어, 라이프스타일 테크 트렌드 큐레이션 블로그"
+baseurl: "/blog"
+url: "https://nj-ktiger.github.io"
+
+theme: minima
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+header_pages:
+  - about.md
+
+paginate: 10
+paginate_path: "/page:num/"

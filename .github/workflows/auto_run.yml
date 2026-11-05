@@ -1,12 +1,12 @@
-name: Nomad Gear Daily Bot
+name: Nomad Gear Daily Bot & Auto Publisher
 on:
   schedule:
-    # 매일 아침 한국시간 오전 7시 40분 (UTC 22:40)에 자동 실행 (GitHub 스케줄러 지연 대비)
+    # 매일 아침 한국시간 오전 7시 40분 (UTC 22:40)에 자동 실행
     - cron: '40 22 * * *'
   workflow_dispatch: # 깃허브에서 수동으로 '실행' 버튼 눌러 테스트도 가능
 
 permissions:
-  contents: write # 중복 발송 방지용 sent_history.txt 자동 업데이트 권한
+  contents: write # 블로그 포스트(_posts) 및 이력(sent_history.txt) 자동 커밋/푸시 권한
 
 jobs:
   run-bot:
@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: 코드 가져오기
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 파이썬 설치
         uses: actions/setup-python@v5
@@ -23,19 +25,19 @@ jobs:
       - name: 라이브러리 설치
         run: pip install -U pip && pip install -r requirements.txt
 
-      - name: 봇 실행 및 텔레그램 전송
+      - name: 봇 실행 및 블로그 글 생성 & 텔레그램 알림
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
 
-      - name: 발송 완료 아이템 이력 저장 (중복 방지)
+      - name: 생성된 블로그 글 및 이력 자동 커밋 & 푸시 (GitHub Pages 자동 배포)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add sent_history.txt
+          git add _posts sent_history.txt
           if ! git diff --staged --quiet; then
-            git commit -m "chore: update sent_history.txt [skip ci]"
+            git commit -m "feat: publish new blog post [skip ci]"
             git push
           fi
