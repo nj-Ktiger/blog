@@ -351,7 +351,7 @@ SLUG: [URL에 들어갈 영문 소문자 슬러그 (예: casio-jam-keyboard, nex
 
 def save_blog_post_file(item: dict, post_data: dict) -> tuple[str, str]:
     """
-    _posts/YYYY-MM-DD-slug.md 파일에 대표 이미지와 원문 링크를 정확히 결합하여 저장합니다.
+    _posts/YYYY-MM-DD-slug.md 파일에 대표 이미지(Chirpy image 규격)와 원문 링크를 정확히 결합하여 저장합니다.
     """
     os.makedirs(POSTS_DIR, exist_ok=True)
 
@@ -370,19 +370,21 @@ def save_blog_post_file(item: dict, post_data: dict) -> tuple[str, str]:
 
     escaped_title = post_data["title"].replace('"', '\\"')
 
-    image_block = ""
+    image_yaml = ""
     if item.get("image_url"):
-        image_block = f"![{escaped_title}]({item['image_url']})\n\n"
+        image_yaml = f"""image:
+  path: {item['image_url']}
+  alt: "{escaped_title}"
+"""
 
     full_markdown = f"""---
-layout: post
 title: "{escaped_title}"
 date: {datetime_str}
 categories: [기어, 테크]
 tags: [노마드기어, 스마트가젯, {item['source'].replace(' ', '')}]
----
+{image_yaml}---
 
-{image_block}{post_data['content']}
+{post_data['content']}
 
 ---
 
@@ -395,7 +397,8 @@ tags: [노마드기어, 스마트가젯, {item['source'].replace(' ', '')}]
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(full_markdown)
 
-    post_url = f"{BLOG_BASE_URL}/{now.strftime('%Y/%m/%d')}/{clean_slug}.html"
+    # Chirpy의 permalink 기본값: /posts/:title/
+    post_url = f"{BLOG_BASE_URL}/posts/{clean_slug}/"
     return file_path, post_url
 
 
