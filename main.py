@@ -5,6 +5,7 @@ import sys
 import feedparser
 import requests
 from google import genai
+from google.genai.errors import APIError
 
 # 1. 환경 설정 (비밀 키)
 TELEGRAM_BOT_TOKEN = (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
@@ -22,7 +23,7 @@ RSS_FEEDS = [
 ]
 
 
-def clean_html(raw_html: str, max_len: int = 400) -> str:
+def clean_html(raw_html: str, max_len: int = 500) -> str:
     """RSS 요약문에서 HTML 태그와 불필요한 공백을 제거합니다."""
     if not raw_html:
         return ""
@@ -69,7 +70,7 @@ def save_sent_history(new_link: str) -> None:
             f.write(f"{link}\n")
 
 
-def get_candidate_items(sent_links: set[str], per_feed_limit: int = 6) -> list[dict]:
+def get_candidate_items(sent_links: set[str], per_feed_limit: int = 4) -> list[dict]:
     """여러 RSS 피드에서 아직 발송하지 않은 최신 후보 아이템들을 수집합니다."""
     candidates = []
     headers = {
@@ -114,11 +115,37 @@ def get_candidate_items(sent_links: set[str], per_feed_limit: int = 6) -> list[d
     return candidates
 
 
+def generate_with_gemini(client: genai.Client, prompt: str) -> str:
+    """
+    Gemini 모델 호출 (gemini-3.5-flash-lite -> gemini-3.1-flash-lite -> gemini-3.8-flash)
+    서버 과부하나 쿼터 변동에도 안정적으로 글을 생성합니다.
+    """
+    models_to_try = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+
+    last_error = None
+    for model_name in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+            )
+            if response.text and response.text.strip():
+                print(f"   -> [{model_name}] 모델을 사용하여 글 생성을 완료했습니다.")
+                return response.text.strip()
+        except APIError as e:
+            print(f"[알림] {model_name} 호출 중 에러 발생: {e}. 다른 모델 시도 중...")
+            last_error = e
+        except Exception as e:
+            print(f"[경고] {model_name} 호출 실패: {e}")
+            last_error = e
+
+    raise RuntimeError(f"Gemini API 호출에 모두 실패했습니다: {last_error}")
+
+
 def curate_and_generate_draft(candidates: list[dict]) -> tuple[dict, str]:
     """
-    Gemini AI (gemini-3.8-flash) 및 Google Search 연동을 사용하여:
-    1) 후보 중 '노마드 & 기어' 컨셉에 가장 잘 어울리는 아이템 1개를 선별하고
-    2) 구글 검색으로 상세 스펙/특징을 보충하여 매력적인 블로그 초안을 작성합니다.
+    후보 아이템 중 '노마드 & 기어' 컨셉에 가장 어울리는 아이템 1개를 선별하고
+    매력적인 블로그/뉴스레터 초안을 작성합니다.
     """
     client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -126,8 +153,8 @@ def curate_and_generate_draft(candidates: list[dict]) -> tuple[dict, str]:
         [
             f"[{idx}] 출처: {item['source']}\n"
             f"- 제품명/제목: {item['title']}\n"
-            f"- 링크: {item['link']}\n"
-            f"- 요약: {item['summary']}"
+            f"- 요약/특징: {item['summary']}\n"
+            f"- 링크: {item['link']}"
             for idx, item in enumerate(candidates)
         ]
     )
@@ -138,31 +165,26 @@ def curate_and_generate_draft(candidates: list[dict]) -> tuple[dict, str]:
 아래 [후보 아이템 목록] 중에서 한국 2030 독자(디지털 노마드, 데스크테리어족, 스마트 기어/가젯 마니아, 생산성 도구에 관심 많은 직장인/크리에이터)의 호기심을 가장 강하게 자극할 수 있는 베스트 아이템 **단 1개**를 골라주세요.
 (너무 개발자 전용인 백엔드/인프라 도구는 피하고, 실생활/업무/라이프스타일/하드웨어 기어/매력적인 신제품 위주로 선정하세요.)
 
-선정한 아이템에 대해 Google 검색을 활용하여 실제 제품의 상세 기능, 디자인 특징, 차별점 등을 정확히 파악한 뒤(없는 사실을 지어내지 말 것), 매력적인 블로그/뉴스레터 초안을 작성하세요.
+선정한 아이템의 상세 내용과 특징을 바탕으로, 한국 2030 독자들이 읽기 좋은 매력적인 블로그/뉴스레터 초안을 작성하세요.
 
 [후보 아이템 목록]
 {candidates_text}
 
 [출력 형식 규칙 - 반드시 지킬 것]
-첫 번째 줄에는 반드시 선택한 아이템의 번호만 아래 형식으로 출력하세요:
+첫 번째 줄에는 반드시 선택한 아이템의 번호만 아래 형식으로 정확히 출력하세요:
 SELECTED_INDEX: 숫자
 
-두 번째 줄부터 블로그 초안을 작성하세요:
-1. 제목: 클릭하고 싶게 매력적인 한 줄 제목 (예: "펀딩 대박? ~한 스마트 기어 등장")
-2. 3줄 핵심 요약 (어떤 제품인지, 가장 혁신적인 기능, 추천 대상)
-3. 본문: 제품의 핵심 매력 포인트와 활용 시나리오를 친절하고 감각적인 말투(~해요, ~해보세요)로 생생하게 소개
-4. 에디터의 한마디: 노마드 & 기어 관점에서의 짧은 총평
+두 번째 줄부터 아래 구성으로 블로그 초안을 작성하세요:
+1. 💡 제목: 클릭하고 싶게 매력적인 한 줄 제목 (예: "펀딩 대박? ~한 스마트 기어 등장")
+2. 📌 3줄 핵심 요약:
+   - 어떤 제품인가요?
+   - 가장 혁신적이거나 차별화된 기능은?
+   - 누구에게 강력 추천하나요?
+3. 📝 본문: 제품의 핵심 매력 포인트와 활용 시나리오를 친절하고 감각적인 말투(~해요, ~해보세요)로 생생하게 소개
+4. ☕ 에디터의 한마디: '노마드 & 기어' 관점에서의 짧은 총평
 """
 
-    interaction = client.interactions.create(
-        model="gemini-3.8-flash",
-        input=prompt,
-        tools=[{"type": "google_search"}],
-    )
-
-    full_text = (interaction.output_text or "").strip()
-    if not full_text:
-        raise RuntimeError("Gemini로부터 응답 텍스트를 받지 못했습니다.")
+    full_text = generate_with_gemini(client, prompt)
 
     selected_idx = 0
     draft_lines = []
@@ -201,7 +223,7 @@ def send_telegram(message: str) -> None:
     # Markdown 문법 충돌(400 Bad Request) 시 일반 텍스트로 Fallback 재전송
     if resp.status_code == 400:
         print(
-            f"[알림] Markdown 파싱 충돌 감지 ({resp.text}). 일반 텍스트 모드로 재전송합니다..."
+            f"[알림] Markdown 파싱 충돌 감지. 일반 텍스트 모드로 재전송합니다..."
         )
         payload_plain = {
             "chat_id": TELEGRAM_CHAT_ID,
@@ -244,13 +266,13 @@ def main():
         return
 
     print(f"   -> 총 {len(candidates)}개의 신규 후보 아이템을 찾았습니다.")
-    print("2. Gemini AI (gemini-3.8-flash + Google 검색)로 베스트 아이템 선정 및 초안 작성 중...")
+    print("2. Gemini AI로 베스트 아이템 선정 및 초안 작성 중...")
     selected_item, draft = curate_and_generate_draft(candidates)
     print(f"   -> 선정된 아이템: [{selected_item['source']}] {selected_item['title']}")
 
     print("3. 스마트폰 텔레그램으로 알림 전송 중...")
     alert_msg = (
-        f"🔔 [노마드 & 기어] 오늘의 큐레이션 초안 도착!\n"
+        f"🔔 [노마드 & 기어] 오늘의 큐레이션 초안 도착!\n\n"
         f"📌 출처: {selected_item['source']}\n"
         f"📦 아이템: {selected_item['title']}\n\n"
         f"{draft}\n\n"
