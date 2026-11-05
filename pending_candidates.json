@@ -1,5 +1,5 @@
 {
-  "status": "pending",
+  "status": "published",
   "created_at": 1793887369.0982366,
   "last_update_id": 0,
   "candidates": [
@@ -33,5 +33,9 @@
       "ko_title": "바늘 대신 빛과 어둠의 그라데이션으로 시간을 그리는 LAWA 그라디언트 시계",
       "ko_summary": "LAWA 디자인의 그라디언트 시계는 전통적인 바늘과 숫자 대신 반투명 회전 디스크의 그라데이션 겹침 현상으로 시간을 표시합니다. 스마트워치와 달리 화면이나 복잡한 앱 없이 일본산 미요타 2025 쿼츠 무브먼트를 탑재하여 아날로그 감성과 시각적 아름다움을 동시에 제공합니다."
     }
-  ]
+  ],
+  "selected_choice": 3,
+  "published_at": 1793887533.5290873,
+  "published_file": "_posts\\2026-11-05-lawa-gradient-watch-review.md",
+  "published_url": "https://nj-ktiger.github.io/blog/2026/11/05/lawa-gradient-watch-review.html"
 }
