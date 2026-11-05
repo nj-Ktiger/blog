@@ -1,8 +1,8 @@
 name: Nomad Gear Daily Bot & Auto Publisher
 on:
   schedule:
-    # 1) 매일 아침 한국시간 오전 7시 40분 (UTC 22:40)에 후보 3선 발송
-    - cron: '40 22 * * *'
+    # 1) 매일 아침 한국시간 오전 8시 10분 (UTC 23:10)에 후보 3선 발송
+    - cron: '10 23 * * *'
     # 2) 15분마다 사용자가 텔레그램에서 선택한 후보(1, 2, 3번 버튼/답장)가 있는지 확인 후 발행
     - cron: '*/15 * * * *'
   workflow_dispatch:
@@ -35,7 +35,7 @@ jobs:
             MODE="${{ github.event.inputs.mode || 'propose' }}"
             echo "run_mode=$MODE" >> $GITHUB_OUTPUT
             echo "should_run=true" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "40 22 * * *" ]; then
+          elif [ "${{ github.event.schedule }}" = "10 23 * * *" ]; then
             echo "run_mode=propose" >> $GITHUB_OUTPUT
             echo "should_run=true" >> $GITHUB_OUTPUT
           else
