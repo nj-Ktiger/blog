@@ -4,6 +4,8 @@ description: "한국 2030을 위한 디지털 노마드, 스마트 기어, 라�
 baseurl: "/blog"
 url: "https://nj-ktiger.github.io"
 
+permalink: /:year/:month/:day/:title.html
+
 theme: minima
 
 plugins:
