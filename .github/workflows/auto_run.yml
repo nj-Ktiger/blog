@@ -3,8 +3,8 @@ on:
   schedule:
     # 1) 매일 아침 한국시간 오전 8시 10분 (UTC 23:10)에 후보 3선 발송
     - cron: '10 23 * * *'
-    # 2) 15분마다 사용자가 텔레그램에서 선택한 후보(1, 2, 3번 버튼/답장)가 있는지 확인 후 발행
-    - cron: '*/15 * * * *'
+    # 2) 10분마다 사용자가 텔레그램에서 선택한 후보(1, 2, 3번 버튼/답장)가 있는지 확인 후 발행
+    - cron: '*/10 * * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -18,10 +18,18 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    outputs:
+      has_new_post: ${{ steps.commit_push.outputs.has_new_post }}
     steps:
       - name: 코드 가져오기
         uses: actions/checkout@v4
@@ -35,11 +43,11 @@ jobs:
             MODE="${{ github.event.inputs.mode || 'propose' }}"
             echo "run_mode=$MODE" >> $GITHUB_OUTPUT
             echo "should_run=true" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "10 23 * * *" ]; then
+          elif [ "${{ github.event.schedule }}" != "*/10 * * * *" ] && [ "${{ github.event_name }}" = "schedule" ]; then
             echo "run_mode=propose" >> $GITHUB_OUTPUT
             echo "should_run=true" >> $GITHUB_OUTPUT
           else
-            # 15분 주기 체크: pending_candidates.json이 pending 상태일 때만 파이썬 실행
+            # 10분 주기 체크: pending_candidates.json이 pending 상태일 때만 파이썬 실행
             if [ -f "pending_candidates.json" ] && grep -q '"status": "pending"' pending_candidates.json; then
               echo "run_mode=check" >> $GITHUB_OUTPUT
               echo "should_run=true" >> $GITHUB_OUTPUT
@@ -67,16 +75,59 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           git pull --rebase origin main || true
-          python main.py --mode ${{ steps.check_mode.outputs.run_mode }} --wait 120
+          python main.py --mode ${{ steps.check_mode.outputs.run_mode }} --wait 300
 
-      - name: 변경사항 자동 커밋 & 푸시 (GitHub Pages 자동 배포)
+      - name: 변경사항 자동 커밋 & 푸시
+        id: commit_push
         if: steps.check_mode.outputs.should_run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add _posts sent_history.txt pending_candidates.json 2>/dev/null || true
           if ! git diff --staged --quiet; then
-            git commit -m "feat: update blog posts and candidate status [skip ci]"
+            if git diff --staged --name-only | grep -q '^_posts/'; then
+              echo "has_new_post=true" >> $GITHUB_OUTPUT
+            fi
+            git commit -m "feat: auto update blog post & status"
             git pull --rebase origin main || true
             git push
           fi
+
+  deploy-pages:
+    needs: run-bot
+    if: needs.run-bot.outputs.has_new_post == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 최신 발행 글 가져오기
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: GitHub Pages 환경 설정
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Ruby 3.3 설치
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Jekyll 정적 사이트 빌드
+        run: |
+          bundle exec jekyll build -d "_site${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: "production"
+
+      - name: 빌드 아티팩트 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_site${{ steps.pages.outputs.base_path }}"
+
+      - name: GitHub Pages 실서버 즉시 배포
+        id: deployment
+        uses: actions/deploy-pages@v4
