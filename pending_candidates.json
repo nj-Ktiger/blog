@@ -1,5 +1,5 @@
 {
-  "status": "pending",
+  "status": "published",
   "created_at": 1793935478.401044,
   "last_update_id": 222543724,
   "candidates": [
@@ -33,5 +33,9 @@
       "ko_title": "식당에서 먹은 요리 재료를 바로 쇼핑한다, 마드리드 ‘필란돈’의 온실 팜숍",
       "ko_summary": "마드리드의 레스토랑 필란돈은 식당 입구에 유리 온실 형태의 팜숍을 구축해 주방에서 사용하는 유기농 채소를 현장에서 직접 판매합니다. 스페인 북서부 농장에서 공수한 신선한 식재료를 식사 후 바로 구매할 수 있는 독창적인 건축 설계와 비즈니스 모델을 선보입니다."
     }
-  ]
+  ],
+  "selected_choice": 3,
+  "published_at": 1793953779.3296642,
+  "published_file": "_posts/2026-11-06-filandon-greenhouse-farm-shop.md",
+  "published_url": "https://nj-ktiger.github.io/blog/posts/filandon-greenhouse-farm-shop/"
 }
