@@ -1,5 +1,5 @@
 {
-  "status": "pending",
+  "status": "published",
   "created_at": 1794104676.5153008,
   "last_update_id": 0,
   "candidates": [
@@ -33,5 +33,9 @@
       "ko_title": "글쓰기에만 몰입하세요, 개성 넘치는 초소형 라이팅 노트북 '마이크로 저널 Rev.2.1.MINI'",
       "ko_summary": "라즈베리 파이 제로 2 W를 탑재한 이 리눅스 기반 기기는 독특한 8인치 와이드 화면과 48키 기계식 키보드를 갖춰 글쓰기에 집중할 수 있는 환경을 제공합니다. 3D 프린팅으로 제작된 감각적인 디자인의 외관에 핫스왑 스위치와 키 매핑 기능을 더해 나만의 맞춤형 도구로 활용할 수 있습니다."
     }
-  ]
+  ],
+  "selected_choice": 3,
+  "published_at": 1794154331.638954,
+  "published_file": "_posts/2026-11-09-micro-journal-rev-2-1-mini-writing-laptop.md",
+  "published_url": "https://nj-ktiger.github.io/blog/posts/micro-journal-rev-2-1-mini-writing-laptop/"
 }
