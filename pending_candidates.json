@@ -1,5 +1,5 @@
 {
-  "status": "pending",
+  "status": "published",
   "created_at": 1794365123.9356287,
   "last_update_id": 0,
   "candidates": [
@@ -33,5 +33,9 @@
       "ko_title": "다락방 대신 1층 침실을 선택한 효율적인 9.6m 타이니 하우스, '칼리(Cali) 9.6'",
       "ko_summary": "호주의 하이랜즈 타이니 홈즈가 제작한 '칼리 9.6'은 다락방을 수납 공간으로 활용하고 침실을 1층에 배치하여 거주 편의성을 높인 모델입니다. 9.6m 길이의 트레일러 기반 구조에 오픈형 주방과 효율적인 동선 설계를 갖추어 실용적인 공간 구성을 완성했습니다."
     }
-  ]
+  ],
+  "selected_choice": 1,
+  "published_at": 1794384772.0569265,
+  "published_file": "_posts/2026-11-11-ring-drone-cam-security-robot.md",
+  "published_url": "https://nj-ktiger.github.io/blog/posts/ring-drone-cam-security-robot/"
 }
