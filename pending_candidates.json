@@ -1,5 +1,5 @@
 {
-  "status": "pending",
+  "status": "published",
   "created_at": 1794455249.873171,
   "last_update_id": 0,
   "candidates": [
@@ -33,5 +33,9 @@
       "ko_title": "AI 작업 효율을 높이는 전용 보조 화면, ‘슬래시바이브(SlashVibe)’ 공개",
       "ko_summary": "슬래시바이브는 3.96인치 디스플레이와 탈착식 음성 컨트롤러를 갖춘 AI 작업 전용 보조 기기로, PC 화면을 복잡하게 전환하지 않고도 AI 업무 진행 상황을 간편하게 확인하고 관리할 수 있습니다. 본체에 탑재된 조이스틱과 액션 키, 음성 받아쓰기 기능을 통해 AI와의 상호작용 및 간단한 편집 작업을 더욱 직관적이고 효율적으로 수행합니다."
     }
-  ]
+  ],
+  "selected_choice": 3,
+  "published_at": 1794484424.0945082,
+  "published_file": "_posts/2026-11-12-slashvibe-ai-work-dedicated-screen.md",
+  "published_url": "https://nj-ktiger.github.io/blog/posts/slashvibe-ai-work-dedicated-screen/"
 }
