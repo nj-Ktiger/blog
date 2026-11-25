@@ -93,13 +93,10 @@ jobs:
             git push
           fi
 
-  deploy-pages:
+  build-pages:
     needs: run-bot
     if: needs.run-bot.outputs.has_new_post == 'true'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: 최신 발행 글 가져오기
         uses: actions/checkout@v4
@@ -128,6 +125,13 @@ jobs:
         with:
           path: "_site${{ steps.pages.outputs.base_path }}"
 
+  deploy-pages:
+    needs: build-pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: GitHub Pages 실서버 즉시 배포
         id: deployment
         uses: actions/deploy-pages@v4
