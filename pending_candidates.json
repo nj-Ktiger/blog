@@ -1,5 +1,5 @@
 {
-  "status": "pending",
+  "status": "published",
   "created_at": 1795584314.2324922,
   "last_update_id": 0,
   "candidates": [
@@ -33,5 +33,9 @@
       "ko_title": "AI를 위한 5버튼의 혁신, 젠스파크(Genspark)의 알루미늄 기계식 ‘보이스패드(VoicePad)’",
       "ko_summary": "보이스패드는 5개의 체리 MX 울트라 로우 프로파일 스위치를 탑재해 음성 명령과 AI 에이전트 호출에 최적화된 휴대용 알루미늄 컨트롤러입니다. 블루투스와 USB-C 연결을 지원하며, 딕테이션부터 회의 녹음까지 일상적인 업무 효율을 높여주는 도구로 활용할 수 있습니다."
     }
-  ]
+  ],
+  "selected_choice": 3,
+  "published_at": 1795594968.3691714,
+  "published_file": "_posts/2026-11-25-genspark-secondbrain-voicepad.md",
+  "published_url": "https://nj-ktiger.github.io/blog/posts/genspark-secondbrain-voicepad/"
 }
